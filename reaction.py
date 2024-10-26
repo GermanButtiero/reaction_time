@@ -60,7 +60,7 @@ class ReactionTimeTest():
             reaction_times = reaction_times + [None] * (20 - len(reaction_times))  # Fill the rest with None
             writer.writerow([id, trial, gender, age, current_time, reaction_times])
 
-    def reaction_time_test(self, id, trial, gender, age, current_time):
+    def reaction_time_test(self, id, trial, gender, age, current_time, practice=False):
         """Main logic for the reaction time test"""
         running = True
         waiting_for_reaction = False
@@ -111,7 +111,14 @@ class ReactionTimeTest():
                                 self.screen.fill(WHITE)
                                 self.draw_text("Too Soon!", self.font, RED, self.screen_width /2, self.screen_height /2)
                                 pygame.display.flip()
-                                pygame.time.delay(2000)
+                                pygame.time.delay(1000)
+
+                                # Return to "Wait..." screen
+                                self.screen.fill(WHITE)
+                                pygame.draw.circle(self.screen, RED, circle_center, circle_radius)  # Draw the circle
+                                self.draw_text("Wait...", self.font, WHITE, self.screen_width /2, self.screen_height /2)
+                                pygame.display.flip()
+                                pygame.time.delay(2000)  # Display "Wait..." again for 2 seconds
                                 break
 
                 # If the random delay has passed, show "GO!"
@@ -148,7 +155,8 @@ class ReactionTimeTest():
 
             pygame.display.update()
         print(reaction_times)
-        self.save_reaction_times(reaction_times, id, trial, gender, age, current_time)
+        if not practice:
+            self.save_reaction_times(reaction_times, id, trial, gender, age, current_time)
 
         # Print collected data when the test is closed
         pygame.quit()
@@ -159,13 +167,14 @@ class ReactionTimeTest():
 
 if __name__ == "__main__":
     test = ReactionTimeTest()
+    practice = True
     gender = "M" 
     age = 29
     current_time = datetime.now().strftime("%H:%M:%S")
-    id = 1
+    id = 3
     trial = 1
 
     if test.check_if_exists(id,trial) == False:
-        test.reaction_time_test(id, trial, gender, age, current_time)
+        test.reaction_time_test(id, trial, gender, age, current_time, practice)
     
 
