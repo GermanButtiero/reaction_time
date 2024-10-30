@@ -7,7 +7,7 @@ from datetime import datetime
 # Define colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
-LIGHT_GREY = (150, 150, 150)
+LIGHT_GREY = (200, 200, 200)
 GREEN = (0, 255, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
@@ -36,16 +36,16 @@ class StroopTest:
         self.color_names = list(self.colors.keys())  # List of color names
         self.reaction_times = []
         self.correctness = []  # To store whether the trial was correct or false
+        self.trial_types = []  # To store if the trial is compatible or incompatible
 
     def draw_circle(self, color):
         """Draws a larger central circle filled with the given color."""
         pygame.draw.circle(self.screen, color, (self.screen_width // 2, 250), 100)  # Adjusted y-position
 
-    def draw_color_buttons(self, correct_color_name, target_color):
+    def draw_color_buttons(self, target_color_name, target_color, compatibility):
         """Draws larger, light-grey rectangles with color names, each in a unique color, with one correct option."""
         button_width = 200
         button_height = 100
-        
         # Updated positions for two rows of two buttons, adjusted left and right
         button_positions = [
             (self.screen_width // 2 - button_width // 2 - 150, 400),  # Adjusted y-position
@@ -57,14 +57,26 @@ class StroopTest:
         buttons = []
         
         # Ensure the correct color name is in the list of options
-        incorrect_options = [name for name in self.color_names if name != correct_color_name]
-        options = random.sample(incorrect_options, 3) + [correct_color_name]
-        random.shuffle(options)  # Shuffle to randomize the position of the correct option
-        
-        # Exclude the target color from font colors
+        incorrect_options = [name for name in self.color_names if name != target_color_name]
+        options = random.sample(incorrect_options, 3) + [target_color_name]
         available_colors = list(self.colors.values())
-        available_colors.remove(target_color)  # Remove the circle color from font color options
-        font_colors = random.sample(available_colors, len(options))
+        available_colors.remove(target_color) 
+
+        if compatibility:
+            # If compatible, include the target color in the font colors
+            font_colors = random.sample(available_colors, 3) + [target_color]
+             
+        else:
+            # Remove the circle color from font color options
+            font_colors = random.sample(available_colors, len(options)) 
+
+        # Combine options and font_colors into pairs and shuffle them together
+        combined = list(zip(options, font_colors))
+        random.shuffle(combined)
+ 
+
+        # Unzip the shuffled pairs back into options and font_colors
+        options, font_colors = zip(*combined)
 
         for position, color_name, font_color in zip(button_positions, options, font_colors):
             button_rect = pygame.Rect(position[0], position[1], button_width, button_height)  # Button dimensions
@@ -80,6 +92,7 @@ class StroopTest:
             self.screen.blit(text_surface, text_rect)
         
         return buttons
+
     
     def check_if_exists(self, participant_id, trial):
         """Check if the given id and trial already exists in the CSV file."""
@@ -97,7 +110,7 @@ class StroopTest:
             return False  
         return False  # ID and trial do not exist    
 
-    def save_reaction_times(self, reaction_times, correctness, participant_id, trial, group, gender, age, current_time):
+    def save_reaction_times(self, reaction_times, correctness, trial_types, participant_id, trial, group, gender, age, current_time):
         """Save reaction times and correctness to a CSV file, appending new data"""
 
         with open("reaction_times.csv", "a", newline='') as f:
@@ -105,16 +118,15 @@ class StroopTest:
             # If the file is empty, write the header
             if f.tell() == 0:  
                 tries = [i for i in range(1, 11)]
-                # Adding correctness columns
-                header = ["id", "trial", "gender", "age", "time"] + tries + ["correctness_" + str(i) for i in range(1, 11)]
+                # Adding correctness columns and trial type column
+                header = ["id", "trial", "gender","group", "age", "time", "trial_type"] + tries + ["correctness_" + str(i) for i in range(1, 11)]
                 writer.writerow(header) 
 
             # Create a row with participant information and reaction times/correctness
             
             # Prepare the data for writing
             reaction_times = reaction_times + [None] * (10 - len(reaction_times))  # Fill the rest with None
-            correctness = correctness + [None] * (10 - len(correctness))  # Fill the rest with None
-            row = [participant_id, trial, gender, age, current_time]
+            row = [participant_id, trial, gender,group,  age, current_time, trial_types]  # Use first trial type as an example
             row.extend(reaction_times)
             row.extend(correctness)
             writer.writerow(row)
@@ -123,10 +135,14 @@ class StroopTest:
         running = True
         trial_count = 0  # Initialize trial count
         if practice:
-            total_trials = 3
+            total_trials = 5
         else:
-            total_trials = 10
+            total_trials = 20  # Set total trials to 20
         
+        # Create a list of trial types: 10 compatible and 10 incompatible
+        
+        compatibility = [True, False]
+        compatibility_trials = []
         while running and trial_count < total_trials:
             self.screen.fill(WHITE)
             
@@ -135,13 +151,15 @@ class StroopTest:
             title_rect = title_surface.get_rect(center=(self.screen_width // 2, 100))  # Adjusted y-position for title
             self.screen.blit(title_surface, title_rect)
 
-            # Pick a color for the central circle
             target_color_name = random.choice(self.color_names)
             target_color = self.colors[target_color_name]
+
             self.draw_circle(target_color)
             
             # Draw color buttons and store their properties
-            buttons = self.draw_color_buttons(target_color_name, target_color)
+            compatible = random.choice(compatibility)
+            compatibility_trials.append(compatible)
+            buttons = self.draw_color_buttons(target_color_name, target_color, compatible)
             pygame.display.flip()
             
             # Start timing user response
@@ -158,12 +176,13 @@ class StroopTest:
                         correct_selection = False
                         for button_rect, color_name, font_color in buttons:
                             if button_rect.collidepoint(pos):
+                                reaction_time = time.time() - start_time
+                                self.reaction_times.append(reaction_time)
+                                #self.trial_types.append("Compatible" if is_compatible else "Incompatible")  # Save trial type
+                                
                                 if color_name == target_color_name:
-                                    reaction_time = time.time() - start_time
-                                    self.reaction_times.append(reaction_time)
                                     self.correctness.append("Correct")  # Store correctness
                                 else:
-                                    self.reaction_times.append(time.time() - start_time)
                                     self.correctness.append("False")  # Store correctness
 
                                 clicked = True  # Move to the next trial on any click
@@ -172,39 +191,36 @@ class StroopTest:
             trial_count += 1  # Increment trial count after each trial
             
             pygame.time.delay(500)  # Brief delay before next trial
-            self.show_continue_message()  # Show continue message after any mouse click
-            pygame.time.delay(500)
-
-        # Save results at the end of the test
+            self.show_continue_message()  # Show continue message after any trial
+            
         if not practice:
-            self.save_reaction_times(self.reaction_times, self.correctness, participant_id, trial, group, gender, age, current_time)
-        pygame.quit()
+            self.save_reaction_times(self.reaction_times, self.correctness, compatibility_trials, participant_id, trial, group, gender, age, current_time)
 
     def show_continue_message(self):
-        """Displays a message instructing the user to click to continue."""
+        """Displays a continue message to the user"""
         self.screen.fill(WHITE)
-        message = "Click to continue to the next trial."
+        message = "Press any key to continue."
         text_surface = self.font.render(message, True, BLACK)
         text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
         self.screen.blit(text_surface, text_rect)
         pygame.display.flip()
-
+        
         waiting = True
         while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    waiting = False  # Exit the loop on mouse click
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    waiting = False  # Exit the waiting loop when a key is pressed
 
 if __name__ == "__main__":
     test = StroopTest()
-    practice = True
+    practice = False
     gender = "M" 
     age = 29
     group = "control"  # "exercise" or "control"
     current_time = datetime.now().strftime("%H:%M:%S")
-    participant_id = 1
+    participant_id = 2
     trial = 1
 
     if not test.check_if_exists(participant_id, trial):
