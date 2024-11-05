@@ -53,15 +53,19 @@ class ReactionTimeTest():
             writer = csv.writer(f)
             # If the file is empty, write the header
             if f.tell() == 0:  
-                tries = [i for i in range(1,20)]
+                tries = [i for i in range(1,11)]
                 writer.writerow(["id", "trial", "gender", "age", "time", tries]) 
 
             
-            reaction_times = reaction_times + [None] * (20 - len(reaction_times))  # Fill the rest with None
+            reaction_times = reaction_times + [None] * (11 - len(reaction_times))  # Fill the rest with None
             writer.writerow([id, trial, gender, age, current_time, reaction_times])
 
-    def reaction_time_test(self, id, trial, gender, age, current_time, practice=False):
+    def reaction_time_test(self, id, trial, gender, group, age, current_time, practice=False):
         """Main logic for the reaction time test"""
+        if practice:
+            total_trials = 3
+        else:
+            total_trials = 10
         running = True
         waiting_for_reaction = False
         waiting_for_go = False
@@ -71,7 +75,7 @@ class ReactionTimeTest():
         reaction_times = []
         too_soon = False  # To handle premature key presses
 
-        while running:
+        while running and trial_count <= total_trials:
             self.screen.fill(WHITE)
             self.draw_text("Press space to start", self.font, BLACK, self.screen_width /2, self.screen_height /2)
             #self.draw_text("Reopen the game to reset", self.small_font, BLACK, 150, 300)
@@ -156,7 +160,7 @@ class ReactionTimeTest():
             pygame.display.update()
         print(reaction_times)
         if not practice:
-            self.save_reaction_times(reaction_times, id, trial, gender, age, current_time)
+            self.save_reaction_times(reaction_times, id, trial, group, gender, age, current_time)
 
         # Print collected data when the test is closed
         pygame.quit()
@@ -169,9 +173,10 @@ if __name__ == "__main__":
     test = ReactionTimeTest()
     practice = True
     gender = "M" 
+    group = "control"  # "exercise" or "control"
     age = 29
     current_time = datetime.now().strftime("%H:%M:%S")
-    id = 3
+    id = 1
     trial = 1
 
     if test.check_if_exists(id,trial) == False:
