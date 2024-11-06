@@ -141,9 +141,9 @@ class StroopTest:
         
         # Create a list of trial types: 10 compatible and 10 incompatible
         
-        compatibility = [True, False]
         compatibility_trials = []
         while running and trial_count < total_trials:
+            self.show_continue_message() 
             self.screen.fill(WHITE)
             
             # Draw the title
@@ -157,7 +157,7 @@ class StroopTest:
             self.draw_circle(target_color)
             
             # Draw color buttons and store their properties
-            compatible = random.choice(compatibility)
+            compatible = random.choices([True, False], weights=[0.2, 0.8])[0]
             compatibility_trials.append(compatible)
             buttons = self.draw_color_buttons(target_color_name, target_color, compatible)
             pygame.display.flip()
@@ -199,7 +199,7 @@ class StroopTest:
     def show_continue_message(self):
         """Displays a continue message to the user"""
         self.screen.fill(WHITE)
-        message = "Press any key to continue."
+        message = "Press any key to start next trial."
         text_surface = self.font.render(message, True, BLACK)
         text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
         self.screen.blit(text_surface, text_rect)
@@ -215,12 +215,12 @@ class StroopTest:
 
 if __name__ == "__main__":
     test = StroopTest()
-    practice = False
+    practice = True
     gender = "M" 
     age = 29
-    group = "control"  # "exercise" or "control"
+    group = "exercise"  # "exercise" or "control"
     current_time = datetime.now().strftime("%H:%M:%S")
-    participant_id = 2
+    participant_id = 3
     trial = 1
 
     if not test.check_if_exists(participant_id, trial):
