@@ -178,7 +178,6 @@ class StroopTest:
                             if button_rect.collidepoint(pos):
                                 reaction_time = time.time() - start_time
                                 self.reaction_times.append(reaction_time)
-                                #self.trial_types.append("Compatible" if is_compatible else "Incompatible")  # Save trial type
                                 
                                 if color_name == target_color_name:
                                     self.correctness.append("Correct")  # Store correctness
@@ -197,12 +196,20 @@ class StroopTest:
             self.save_reaction_times(self.reaction_times, self.correctness, compatibility_trials, participant_id, trial, group, gender, age, current_time)
 
     def show_continue_message(self):
-        """Displays a continue message to the user"""
+        """Displays a black circle with instructions for the user to click to continue."""
         self.screen.fill(WHITE)
-        message = "Press any key to start next trial."
+        
+        # Define the circle's position and color (black)
+        circle_position = (self.screen_width // 2, 250)
+        circle_radius = 100
+        pygame.draw.circle(self.screen, BLACK, circle_position, circle_radius)
+        
+        # Render the instruction text below the circle
+        message = "Press the black circle to start new trial"
         text_surface = self.font.render(message, True, BLACK)
-        text_rect = text_surface.get_rect(center=(self.screen_width // 2, self.screen_height // 2))
+        text_rect = text_surface.get_rect(center=(self.screen_width // 2, circle_position[1] + 150))  # Position below the circle
         self.screen.blit(text_surface, text_rect)
+        
         pygame.display.flip()
         
         waiting = True
@@ -210,8 +217,14 @@ class StroopTest:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting = False
-                if event.type == pygame.MOUSEBUTTONDOWN:
-                    waiting = False  # Exit the waiting loop when a key is pressed
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    
+                    # Check if the click is within the circle's radius
+                    distance = ((pos[0] - circle_position[0]) ** 2 + (pos[1] - circle_position[1]) ** 2) ** 0.5
+                    if distance <= circle_radius:
+                        waiting = False  # Exit the waiting loop if the black circle is clicked
+
 
 if __name__ == "__main__":
     test = StroopTest()
