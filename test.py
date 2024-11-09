@@ -108,7 +108,7 @@ class StroopTest:
     def run_test(self, participant_id, trial, group, gender, age, current_time, practice=False):
         running = True
         trial_count = 0
-        total_trials = 10 if practice else 20
+        total_trials = 5 if practice else 20
 
         while running and trial_count < total_trials:
             self.show_continue_message()
