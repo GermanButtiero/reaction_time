@@ -8,7 +8,7 @@ library(lme4)
 
 # Fit the mixed-effects model
 model <- lmer(avg_incongruent ~ trial * group + (1 | id), data = df)
-
+anova(model)
 # Summary of the model
 summary(model)
 
